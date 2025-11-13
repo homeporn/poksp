@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
 
 from . import crud
-from .database import create_db_and_tables, get_session
+from .database import create_db_and_tables, engine, get_session
 from .models import PlayerCreate, TransactionCreate, TransactionType
 
 app = FastAPI(title="Poker Stack - Telegram Mini App Backend")
@@ -16,6 +16,11 @@ templates = Jinja2Templates(directory="app/templates")
 @app.on_event("startup")
 def on_startup() -> None:
     create_db_and_tables()
+
+
+@app.on_event("shutdown")
+def on_shutdown() -> None:
+    engine.dispose()
 
 
 def get_db() -> Session:
