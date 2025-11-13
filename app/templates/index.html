@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Poker Stack</title>
+    <link rel="stylesheet" href="https://unpkg.com/milligram/dist/milligram.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}" />
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  </head>
+  <body>
+    <main class="container">
+      <h1>Учет игроков</h1>
+      <section class="card">
+        <h2>Новый игрок</h2>
+        <form method="post" action="/players">
+          <label for="name">Имя</label>
+          <input type="text" id="name" name="name" required />
+          <label for="telegram_username">Telegram</label>
+          <input type="text" id="telegram_username" name="telegram_username" placeholder="@username" />
+          <button type="submit">Добавить</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Новая операция</h2>
+        <form method="post" action="/transactions">
+          <label for="player_id">Игрок</label>
+          <select id="player_id" name="player_id" required>
+            <option value="" disabled selected>Выберите игрока</option>
+            {% for player in players %}
+            <option value="{{ player.id }}">{{ player.name }}</option>
+            {% endfor %}
+          </select>
+          <label for="amount">Сумма</label>
+          <input type="number" id="amount" name="amount" step="0.01" min="0" required />
+          <label for="type">Тип</label>
+          <select id="type" name="type" required>
+            <option value="{{ transaction_types.BUY_IN.value }}">Бай-ин</option>
+            <option value="{{ transaction_types.WIN.value }}">Выигрыш</option>
+            <option value="{{ transaction_types.LOSS.value }}">Проигрыш</option>
+          </select>
+          <label for="note">Комментарий</label>
+          <input type="text" id="note" name="note" placeholder="Например, кеш-игра" />
+          <button type="submit">Сохранить</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Статистика игроков</h2>
+        {% if players %}
+        <table>
+          <thead>
+            <tr>
+              <th>Имя</th>
+              <th>Telegram</th>
+              <th>Бай-ины</th>
+              <th>Выигрыши</th>
+              <th>Проигрыши</th>
+              <th>Баланс</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for player in players %}
+            <tr>
+              <td>{{ player.name }}</td>
+              <td>{{ player.telegram_username or '-' }}</td>
+              <td>{{ '%.2f' | format(player.buy_ins_total) }}</td>
+              <td>{{ '%.2f' | format(player.winnings_total) }}</td>
+              <td>{{ '%.2f' | format(player.losses_total) }}</td>
+              <td class="{{ 'positive' if player.balance >= 0 else 'negative' }}">
+                {{ '%.2f' | format(player.balance) }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p>Добавьте первого игрока, чтобы начать учет.</p>
+        {% endif %}
+      </section>
+
+      <section class="card">
+        <h2>История операций</h2>
+        {% if transactions %}
+        <ul class="transactions">
+          {% for tx in transactions %}
+          <li>
+            <strong>{{ tx.player.name }}</strong> — {{ tx.type.value }} на {{ '%.2f' | format(tx.amount) }}
+            <span class="timestamp">{{ tx.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+            {% if tx.note %}
+            <em>({{ tx.note }})</em>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p>Пока нет операций.</p>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>
